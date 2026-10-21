@@ -1,0 +1,11 @@
+{
+  "request": {
+    "question": "How exactly did adding Redis caching achieve a 40% reduction in API latency?",
+    "answer": "I used caching to make it faster and it worked well.",
+    "evaluation": "(see 4_interview_evaluate)"
+  },
+  "response": {
+    "followup_question": "What specific data did you cache, and how did you handle cache invalidation?",
+    "reason": "The candidate failed to describe the scope of the caching strategy or how data freshness was maintained."
+  }
+}

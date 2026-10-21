@@ -1,0 +1,35 @@
+{
+  "request": {
+    "file": "sample_resume.docx"
+  },
+  "response": {
+    "candidate_name": "Asha Rao",
+    "skills": [
+      "Python",
+      "FastAPI",
+      "PostgreSQL",
+      "Redis",
+      "Docker",
+      "AWS",
+      "React",
+      "Git"
+    ],
+    "projects": [
+      {
+        "name": "Order Tracker",
+        "description": "Real-time order tracking web app.",
+        "technologies": [
+          "FastAPI",
+          "React",
+          "WebSockets"
+        ]
+      }
+    ],
+    "experience_summary": "Software Engineer with experience building REST APIs using Python, FastAPI, and PostgreSQL. Proven ability to optimize performance and manage cloud infrastructure migrations.",
+    "claims_to_verify": [
+      "Reduced API latency by 40% by adding Redis caching.",
+      "Led migration of 12 services to Docker and AWS ECS.",
+      "Order Tracker used by 300 daily users."
+    ]
+  }
+}

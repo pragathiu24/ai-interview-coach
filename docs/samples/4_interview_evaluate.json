@@ -1,0 +1,64 @@
+{
+  "request": {
+    "question": "How exactly did adding Redis caching achieve a 40% reduction in API latency?",
+    "answer": "I used caching to make it faster and it worked well.",
+    "related_claim": "Reduced API latency by 40% by adding Redis caching.",
+    "analysis": {
+      "candidate_name": "Asha Rao",
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Redis",
+        "Docker",
+        "AWS",
+        "React",
+        "Git"
+      ],
+      "projects": [
+        {
+          "name": "Order Tracker",
+          "description": "Real-time order tracking web app.",
+          "technologies": [
+            "FastAPI",
+            "React",
+            "WebSockets"
+          ]
+        }
+      ],
+      "experience_summary": "Software Engineer with experience building REST APIs using Python, FastAPI, and PostgreSQL. Proven ability to optimize performance and manage cloud infrastructure migrations.",
+      "claims_to_verify": [
+        "Reduced API latency by 40% by adding Redis caching.",
+        "Led migration of 12 services to Docker and AWS ECS.",
+        "Order Tracker used by 300 daily users."
+      ]
+    }
+  },
+  "response": {
+    "technical_accuracy": {
+      "score": 3,
+      "reason": "The answer is too vague to confirm any technical accuracy regarding the caching mechanism."
+    },
+    "specificity": {
+      "score": 1,
+      "reason": "The answer contains no concrete details, tools, numbers, or examples of the implementation."
+    },
+    "clarity": {
+      "score": 5,
+      "reason": "The answer is extremely brief and lacks structure, though it is easy to understand."
+    },
+    "resume_claim_support": {
+      "score": 2,
+      "reason": "The answer fails to provide any believable detail to support the specific claim of a 40% latency reduction."
+    },
+    "missing_points": [
+      "The specific caching strategy (e.g., read-through, write-through)",
+      "The type of data cached (e.g., frequently accessed read-only data)",
+      "The mechanism for cache invalidation",
+      "The specific latency metrics before and after the change"
+    ],
+    "stronger_answer": "I implemented a read-through caching strategy using Redis to store frequently accessed, read-only data from PostgreSQL. This bypassed expensive database queries, and by setting a short TTL and implementing a write-through mechanism, we achieved the targeted 40% reduction in API latency.",
+    "needs_followup": true,
+    "overall_score": 2.8
+  }
+}

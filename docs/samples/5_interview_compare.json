@@ -1,0 +1,72 @@
+{
+  "request": {
+    "question": "How exactly did adding Redis caching achieve a 40% reduction in API latency?",
+    "first_answer": "I used caching to make it faster and it worked well.",
+    "retry_answer": "I profiled the endpoint with py-spy and found that repeated Postgres queries dominated. I added a Redis cache with a 60 second TTL and invalidated keys on writes. Median latency dropped from about 800 ms to 480 ms, measured with Locust under the same load. The trade-off was slightly stale data for up to a minute.",
+    "related_claim": "Reduced API latency by 40% by adding Redis caching.",
+    "analysis": {
+      "candidate_name": "Asha Rao",
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Redis",
+        "Docker",
+        "AWS",
+        "React",
+        "Git"
+      ],
+      "projects": [
+        {
+          "name": "Order Tracker",
+          "description": "Real-time order tracking web app.",
+          "technologies": [
+            "FastAPI",
+            "React",
+            "WebSockets"
+          ]
+        }
+      ],
+      "experience_summary": "Software Engineer with experience building REST APIs using Python, FastAPI, and PostgreSQL. Proven ability to optimize performance and manage cloud infrastructure migrations.",
+      "claims_to_verify": [
+        "Reduced API latency by 40% by adding Redis caching.",
+        "Led migration of 12 services to Docker and AWS ECS.",
+        "Order Tracker used by 300 daily users."
+      ]
+    }
+  },
+  "response": {
+    "first_scores": {
+      "technical_accuracy": 2,
+      "specificity": 1,
+      "clarity": 3,
+      "resume_claim_support": 2
+    },
+    "retry_scores": {
+      "technical_accuracy": 9,
+      "specificity": 9,
+      "clarity": 8,
+      "resume_claim_support": 9
+    },
+    "newly_covered_points": [
+      "Identified Postgres queries as the bottleneck using py-spy",
+      "Specified Redis TTL (60 seconds) and invalidation strategy",
+      "Provided concrete latency metrics (800ms to 480ms)",
+      "Mentioned load testing tool (Locust)",
+      "Discussed the trade-off of slightly stale data"
+    ],
+    "still_missing": [
+      ""
+    ],
+    "summary": "The retry provided a highly detailed and technically accurate explanation, backing up the resume claim with specific tools, metrics, and trade-offs. The first answer was too vague to be useful.",
+    "deltas": {
+      "technical_accuracy": 7,
+      "specificity": 8,
+      "clarity": 5,
+      "resume_claim_support": 7
+    },
+    "overall_first": 2.0,
+    "overall_retry": 8.8,
+    "overall_delta": 6.8
+  }
+}

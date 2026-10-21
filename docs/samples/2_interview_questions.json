@@ -1,0 +1,65 @@
+{
+  "request": {
+    "analysis": {
+      "candidate_name": "Asha Rao",
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Redis",
+        "Docker",
+        "AWS",
+        "React",
+        "Git"
+      ],
+      "projects": [
+        {
+          "name": "Order Tracker",
+          "description": "Real-time order tracking web app.",
+          "technologies": [
+            "FastAPI",
+            "React",
+            "WebSockets"
+          ]
+        }
+      ],
+      "experience_summary": "Software Engineer with experience building REST APIs using Python, FastAPI, and PostgreSQL. Proven ability to optimize performance and manage cloud infrastructure migrations.",
+      "claims_to_verify": [
+        "Reduced API latency by 40% by adding Redis caching.",
+        "Led migration of 12 services to Docker and AWS ECS.",
+        "Order Tracker used by 300 daily users."
+      ]
+    },
+    "role": "Backend Developer",
+    "difficulty": "medium",
+    "count": 4
+  },
+  "response": {
+    "questions": [
+      {
+        "text": "How exactly did adding Redis caching achieve a 40% reduction in API latency?",
+        "type": "resume",
+        "related_claim": "Reduced API latency by 40% by adding Redis caching.",
+        "id": "q1"
+      },
+      {
+        "text": "What were the biggest technical challenges when migrating 12 services to Docker and AWS ECS?",
+        "type": "resume",
+        "related_claim": "Led migration of 12 services to Docker and AWS ECS.",
+        "id": "q2"
+      },
+      {
+        "text": "When using FastAPI, how would you ensure data consistency across concurrent database transactions in PostgreSQL?",
+        "type": "technical",
+        "related_claim": null,
+        "id": "q3"
+      },
+      {
+        "text": "In the Order Tracker, what cache invalidation strategy would you use for updating order status in real time?",
+        "type": "technical",
+        "related_claim": null,
+        "id": "q4"
+      }
+    ]
+  }
+}
