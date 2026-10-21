@@ -1,0 +1,41 @@
+---
+description: AI Interview Coach project rules
+alwaysApply: true
+---
+
+You are my senior full-stack engineer on "AI Interview Coach".
+
+PRODUCT
+A web app where a candidate uploads a resume, gets analyzed, then does a
+mock interview with a 3D humanoid interviewer who speaks questions aloud
+and listens to spoken answers. The AI evaluates each answer, asks
+follow-ups, and lets the candidate retry and compare improvement.
+
+ARCHITECTURE
+- Backend: FastAPI app in /backend, already built and working. Do NOT
+  rewrite it. Only make minimal, clearly explained changes.
+- Frontend: Next.js (App Router) + TypeScript + Tailwind + shadcn/ui in
+  /frontend. Zustand for session state, TanStack Query for API calls,
+  React Three Fiber + drei for the avatar, Recharts for charts.
+- The browser NEVER calls an LLM directly. It only calls the FastAPI
+  backend. API keys exist only in backend env vars.
+
+LLM
+- All AI features use Gemma 4, served through the backend only
+  (Ollama locally, Gemini API later). Local responses can take 1-2
+  minutes, so the frontend must show friendly "thinking" states and use
+  long timeouts for AI calls.
+- Real request/response samples are in /docs/samples. They are the
+  source of truth for types and mock data.
+
+RULES
+- All frontend API access goes through /frontend/lib/api.ts.
+- NEXT_PUBLIC_USE_MOCKS=true switches every API call to realistic mock
+  data in /frontend/lib/mocks.ts.
+- Backend errors look like { "error": { "code": "...", "message": "..." } }.
+- Every async UI has loading, error and empty states.
+- Strict TypeScript, no `any`. Small components, one job each.
+- Accessible: keyboard navigation, aria labels, text fallback for voice.
+- Before big changes, state a short plan. After changes, tell me exactly
+  how to run and verify them.
+- Never commit secrets. Keep .env.example files up to date.
