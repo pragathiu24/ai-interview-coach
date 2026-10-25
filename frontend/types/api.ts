@@ -1,38 +1,65 @@
+// Shapes match the FastAPI backend (backend/schemas.py) exactly.
+
 export type Difficulty = "easy" | "medium" | "hard";
+export type QuestionType = "technical" | "behavioral" | "resume";
 
-export type QuestionType = "resume" | "technical" | "behavioral";
-
-export type Project = {
+// ---------- 1. Resume analysis ----------
+export interface Project {
   name: string;
   description: string;
   technologies: string[];
-};
+}
 
-export type ResumeAnalysis = {
+export interface ResumeAnalysis {
   candidate_name: string;
   skills: string[];
   projects: Project[];
   experience_summary: string;
   claims_to_verify: string[];
-};
+}
 
-export type Question = {
+// ---------- 2. Questions ----------
+export interface QuestionsRequest {
+  analysis: ResumeAnalysis;
+  role: string;
+  difficulty: Difficulty;
+  count: number;
+}
+
+export interface Question {
+  id: string;
   text: string;
   type: QuestionType;
   related_claim: string | null;
-  id: string;
-};
+}
 
-export type QuestionsResponse = {
+export interface QuestionsResponse {
   questions: Question[];
+}
+
+// ---------- 4. Evaluation ----------
+export const SCORE_KEYS = [
+  "technical_accuracy",
+  "specificity",
+  "clarity",
+  "resume_claim_support",
+] as const;
+
+export type ScoreKey = (typeof SCORE_KEYS)[number];
+
+export const SCORE_LABELS: Record<ScoreKey, string> = {
+  technical_accuracy: "Technical accuracy",
+  specificity: "Specificity",
+  clarity: "Clarity",
+  resume_claim_support: "Resume-claim support",
 };
 
-export type ScoreItem = {
-  score: number;
+export interface ScoreItem {
+  score: number; // integer 0-10
   reason: string;
-};
+}
 
-export type Evaluation = {
+export interface Evaluation {
   technical_accuracy: ScoreItem;
   specificity: ScoreItem;
   clarity: ScoreItem;
@@ -40,81 +67,50 @@ export type Evaluation = {
   missing_points: string[];
   stronger_answer: string;
   needs_followup: boolean;
-};
+}
 
-export type EvaluateResponse = Evaluation & {
-  overall_score: number;
-};
-
-export type FollowupResponse = {
-  followup_question: string;
-  reason: string;
-};
-
-export type ScoreBreakdown = {
-  technical_accuracy: number;
-  specificity: number;
-  clarity: number;
-  resume_claim_support: number;
-};
-
-export type ScoreDeltas = ScoreBreakdown;
-
-export type CompareResponse = {
-  first_scores: ScoreBreakdown;
-  retry_scores: ScoreBreakdown;
-  newly_covered_points: string[];
-  still_missing: string[];
-  summary: string;
-  deltas: ScoreDeltas;
-  overall_first: number;
-  overall_retry: number;
-  overall_delta: number;
-};
-
-export type QuestionsRequest = {
-  analysis: ResumeAnalysis;
-  role: string;
-  difficulty: Difficulty;
-  count: number;
-};
-
-export type FollowupRequest = {
-  question: string;
-  answer: string;
-  evaluation?: Evaluation;
-};
-
-export type EvaluateRequest = {
+export interface EvaluateRequest {
   question: string;
   answer: string;
   related_claim?: string | null;
-  analysis?: ResumeAnalysis;
-};
+  analysis?: ResumeAnalysis | null;
+}
 
-export type CompareRequest = {
+export interface EvaluateResponse extends Evaluation {
+  overall_score: number; // 0-10, one decimal
+}
+
+// ---------- 3. Follow-up ----------
+export interface FollowupRequest {
+  question: string;
+  answer: string;
+  evaluation?: Evaluation | null;
+}
+
+export interface FollowupResponse {
+  followup_question: string;
+  reason: string;
+}
+
+// ---------- 5. Retry comparison ----------
+export type Scores = Record<ScoreKey, number>;
+
+export interface CompareRequest {
   question: string;
   first_answer: string;
   retry_answer: string;
   related_claim?: string | null;
-  analysis?: ResumeAnalysis;
-};
+  analysis?: ResumeAnalysis | null;
+}
 
-export type ApiErrorBody = {
-  error: {
-    code: string;
-    message: string;
-  };
-};
-
-export class ApiError extends Error {
-  readonly code: string;
-  readonly status: number;
-
-  constructor(code: string, message: string, status: number) {
-    super(message);
-    this.name = "ApiError";
-    this.code = code;
-    this.status = status;
-  }
+export interface CompareResponse {
+  first_scores: Scores;
+  retry_scores: Scores;
+  deltas: Scores; // retry minus first, can be negative
+  overall_first: number;
+  overall_retry: number;
+  overall_delta: number;
+  newly_covered_points: string[];
+  still_missing: string[];
+  summary: string;
 }

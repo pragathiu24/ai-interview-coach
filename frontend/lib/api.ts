@@ -1,196 +1,121 @@
-import {
-  mockCompare,
-  mockEvaluationForAnswer,
-  mockFollowup,
-  mockQuestionsResponse,
-  mockResumeAnalysis,
-} from "@/lib/mocks";
-import {
-  ApiError,
-  type ApiErrorBody,
-  type CompareRequest,
-  type CompareResponse,
-  type EvaluateRequest,
-  type EvaluateResponse,
-  type FollowupRequest,
-  type FollowupResponse,
-  type QuestionsRequest,
-  type QuestionsResponse,
-  type ResumeAnalysis,
+import { AI_TIMEOUT_MS, API_URL, MOCK_ERRORS, USE_MOCKS } from "./config";
+import { mockAnalysis, mockCompare, mockEvaluate, mockFollowup, mockQuestions } from "./mocks";
+import type {
+  CompareRequest,
+  CompareResponse,
+  EvaluateRequest,
+  EvaluateResponse,
+  FollowupRequest,
+  FollowupResponse,
+  QuestionsRequest,
+  QuestionsResponse,
+  ResumeAnalysis,
 } from "@/types/api";
 
-const AI_TIMEOUT_MS = 280_000;
-const MOCK_DELAY_MIN_MS = 600;
-const MOCK_DELAY_MAX_MS = 1500;
-const MOCK_ERROR_RATE = 0.1;
+/** Backend errors look like { "error": { "code": "...", "message": "..." } }. */
+export class ApiError extends Error {
+  readonly code: string;
+  readonly status: number;
 
-function mocksEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_USE_MOCKS === "true";
-}
-
-function apiBaseUrl(): string {
-  const base = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return base.replace(/\/+$/, "");
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-function randomDelayMs(): number {
-  return (
-    MOCK_DELAY_MIN_MS +
-    Math.floor(Math.random() * (MOCK_DELAY_MAX_MS - MOCK_DELAY_MIN_MS + 1))
-  );
-}
-
-async function withMockDelay<T>(value: T): Promise<T> {
-  await sleep(randomDelayMs());
-  if (Math.random() < MOCK_ERROR_RATE) {
-    throw new ApiError(
-      "mock_error",
-      "The mock API failed this request. Try again.",
-      503,
-    );
+  constructor(code: string, message: string, status = 0) {
+    super(message);
+    this.name = "ApiError";
+    this.code = code;
+    this.status = status;
   }
-  return value;
 }
 
-function isApiErrorBody(value: unknown): value is ApiErrorBody {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-  if (!("error" in value)) {
-    return false;
-  }
-  const error = value.error;
-  if (typeof error !== "object" || error === null) {
-    return false;
-  }
-  return (
-    "code" in error &&
-    "message" in error &&
-    typeof error.code === "string" &&
-    typeof error.message === "string"
-  );
-}
-
-async function request<T>(
-  path: string,
-  init: RequestInit,
-): Promise<T> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
-
+async function toApiError(res: Response): Promise<ApiError> {
   try {
-    const response = await fetch(`${apiBaseUrl()}${path}`, {
-      ...init,
-      signal: controller.signal,
-    });
-
-    const text = await response.text();
-    let parsed: unknown = null;
-    if (text) {
-      try {
-        parsed = JSON.parse(text) as unknown;
-      } catch {
-        parsed = null;
-      }
+    const body = (await res.json()) as { error?: { code?: string; message?: string } };
+    if (body.error?.message) {
+      return new ApiError(body.error.code ?? "http_error", body.error.message, res.status);
     }
-
-    if (!response.ok) {
-      if (isApiErrorBody(parsed)) {
-        throw new ApiError(
-          parsed.error.code,
-          parsed.error.message,
-          response.status,
-        );
-      }
-      throw new ApiError(
-        "http_error",
-        text || `Request failed with status ${response.status}`,
-        response.status,
-      );
-    }
-
-    return parsed as T;
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new ApiError(
-        "timeout",
-        "The AI request timed out after 280 seconds.",
-        408,
-      );
-    }
-    throw new ApiError(
-      "network_error",
-      error instanceof Error ? error.message : "Network request failed",
-      0,
-    );
-  } finally {
-    clearTimeout(timeout);
+  } catch {
+    // The body was not JSON; fall through to the generic message.
   }
+  return new ApiError("http_error", `The server returned an error (${res.status}).`, res.status);
 }
 
-function jsonInit(body: unknown): RequestInit {
-  return {
+const NETWORK_MESSAGE =
+  "Cannot reach the server. Check that the backend is running, then try again.";
+
+/** fetch with a timeout, one automatic retry on network failure, and typed errors. */
+async function request<T>(path: string, init: RequestInit, timeoutMs = AI_TIMEOUT_MS): Promise<T> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(`${API_URL}${path}`, { ...init, signal: controller.signal });
+      if (!res.ok) throw await toApiError(res);
+      return (await res.json()) as T;
+    } catch (e) {
+      if (e instanceof ApiError) throw e;
+      if (e instanceof DOMException && e.name === "AbortError") {
+        throw new ApiError("timeout", "The AI took too long to respond. Please try again.");
+      }
+      if (attempt === 1) throw new ApiError("network_error", NETWORK_MESSAGE);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw new ApiError("network_error", NETWORK_MESSAGE);
+}
+
+function postJson<T>(path: string, body: unknown): Promise<T> {
+  return request<T>(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-  };
-}
-
-export async function analyzeResume(file: File): Promise<ResumeAnalysis> {
-  if (mocksEnabled()) {
-    return withMockDelay(mockResumeAnalysis);
-  }
-
-  const form = new FormData();
-  form.append("file", file);
-
-  return request<ResumeAnalysis>("/api/resume/analyze", {
-    method: "POST",
-    body: form,
   });
 }
 
-export async function generateQuestions(
-  body: QuestionsRequest,
-): Promise<QuestionsResponse> {
-  if (mocksEnabled()) {
-    return withMockDelay(mockQuestionsResponse(body));
+async function mockDelay(): Promise<void> {
+  await new Promise<void>((resolve) => setTimeout(resolve, 600 + Math.random() * 900));
+  if (MOCK_ERRORS && Math.random() < 0.2) {
+    throw new ApiError("mock_error", "Simulated error (NEXT_PUBLIC_MOCK_ERRORS is on).", 500);
   }
-  return request<QuestionsResponse>("/api/interview/questions", jsonInit(body));
 }
 
-export async function getFollowup(
-  body: FollowupRequest,
-): Promise<FollowupResponse> {
-  if (mocksEnabled()) {
-    return withMockDelay(mockFollowup);
+// ---------- the five endpoints ----------
+export async function analyzeResume(file: File): Promise<ResumeAnalysis> {
+  if (USE_MOCKS) {
+    await mockDelay();
+    return mockAnalysis;
   }
-  return request<FollowupResponse>("/api/interview/followup", jsonInit(body));
+  const form = new FormData();
+  form.append("file", file);
+  return request<ResumeAnalysis>("/api/resume/analyze", { method: "POST", body: form });
 }
 
-export async function evaluateAnswer(
-  body: EvaluateRequest,
-): Promise<EvaluateResponse> {
-  if (mocksEnabled()) {
-    return withMockDelay(mockEvaluationForAnswer(body));
+export async function generateQuestions(req: QuestionsRequest): Promise<QuestionsResponse> {
+  if (USE_MOCKS) {
+    await mockDelay();
+    return { questions: mockQuestions.slice(0, req.count) };
   }
-  return request<EvaluateResponse>("/api/interview/evaluate", jsonInit(body));
+  return postJson<QuestionsResponse>("/api/interview/questions", req);
 }
 
-export async function compareAnswers(
-  body: CompareRequest,
-): Promise<CompareResponse> {
-  if (mocksEnabled()) {
-    return withMockDelay(mockCompare);
+export async function evaluateAnswer(req: EvaluateRequest): Promise<EvaluateResponse> {
+  if (USE_MOCKS) {
+    await mockDelay();
+    return mockEvaluate(req.answer);
   }
-  return request<CompareResponse>("/api/interview/compare", jsonInit(body));
+  return postJson<EvaluateResponse>("/api/interview/evaluate", req);
+}
+
+export async function followUp(req: FollowupRequest): Promise<FollowupResponse> {
+  if (USE_MOCKS) {
+    await mockDelay();
+    return mockFollowup;
+  }
+  return postJson<FollowupResponse>("/api/interview/followup", req);
+}
+
+export async function compareAnswers(req: CompareRequest): Promise<CompareResponse> {
+  if (USE_MOCKS) {
+    await mockDelay();
+    return mockCompare;
+  }
+  return postJson<CompareResponse>("/api/interview/compare", req);
 }

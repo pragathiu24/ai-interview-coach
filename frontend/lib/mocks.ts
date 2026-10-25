@@ -1,14 +1,12 @@
 import type {
   CompareResponse,
-  EvaluateRequest,
   EvaluateResponse,
   FollowupResponse,
   Question,
-  QuestionsRequest,
   ResumeAnalysis,
 } from "@/types/api";
 
-export const mockResumeAnalysis: ResumeAnalysis = {
+export const mockAnalysis: ResumeAnalysis = {
   candidate_name: "Asha Rao",
   skills: [
     "Python",
@@ -16,228 +14,144 @@ export const mockResumeAnalysis: ResumeAnalysis = {
     "PostgreSQL",
     "Redis",
     "Docker",
-    "AWS",
+    "AWS ECS",
     "React",
-    "Git",
-    "pytest",
     "WebSockets",
+    "Git",
   ],
   projects: [
     {
       name: "Order Tracker",
-      description:
-        "Real-time order tracking web app used by warehouse and support teams.",
-      technologies: ["FastAPI", "React", "WebSockets", "Redis"],
+      description: "Real-time order tracking web app used by about 300 daily users.",
+      technologies: ["FastAPI", "React", "WebSockets", "PostgreSQL"],
     },
     {
-      name: "Inventory Sync",
-      description:
-        "Nightly job that reconciles warehouse counts with the catalog and flags mismatches.",
-      technologies: ["Python", "PostgreSQL", "AWS ECS"],
+      name: "Service Migration",
+      description: "Moved 12 backend services into Docker containers running on AWS ECS.",
+      technologies: ["Docker", "AWS ECS", "GitHub Actions"],
     },
   ],
   experience_summary:
-    "Software Engineer with experience building REST APIs using Python, FastAPI, and PostgreSQL. Proven ability to optimize performance and manage cloud infrastructure migrations. Recently focused on caching, containerization, and keeping warehouse-facing tools reliable under load.",
+    "Backend developer with two years of experience building REST APIs and improving performance for a retail platform.",
   claims_to_verify: [
-    "Reduced API latency by 40% by adding Redis caching.",
-    "Led migration of 12 services to Docker and AWS ECS.",
-    "Order Tracker used by 300 daily users.",
-    "Cut inventory mismatch tickets by 25% after Inventory Sync went live.",
+    "Reduced API latency by 40% by adding Redis caching",
+    "Led migration of 12 services to Docker and AWS ECS",
+    "Order Tracker is used by 300 daily users",
   ],
 };
 
 export const mockQuestions: Question[] = [
   {
     id: "q1",
-    text: "How exactly did adding Redis caching achieve a 40% reduction in API latency?",
+    text: "You mention cutting API latency by 40 percent with Redis. How did you measure that, and what exactly did you cache?",
     type: "resume",
-    related_claim: "Reduced API latency by 40% by adding Redis caching.",
+    related_claim: "Reduced API latency by 40% by adding Redis caching",
   },
   {
     id: "q2",
-    text: "What were the biggest technical challenges when migrating 12 services to Docker and AWS ECS?",
-    type: "resume",
-    related_claim: "Led migration of 12 services to Docker and AWS ECS.",
-  },
-  {
-    id: "q3",
-    text: "When using FastAPI, how would you ensure data consistency across concurrent database transactions in PostgreSQL?",
+    text: "How would you manage database connection pooling in a FastAPI service under heavy load?",
     type: "technical",
     related_claim: null,
   },
   {
+    id: "q3",
+    text: "Walk me through how you planned the migration of 12 services to AWS ECS. What went wrong along the way?",
+    type: "resume",
+    related_claim: "Led migration of 12 services to Docker and AWS ECS",
+  },
+  {
     id: "q4",
-    text: "In the Order Tracker, what cache invalidation strategy would you use for updating order status in real time?",
+    text: "How do WebSockets differ from polling, and how would you scale them for Order Tracker?",
     type: "technical",
     related_claim: null,
   },
   {
     id: "q5",
-    text: "Tell me about a time you had to explain a production incident to non-engineers while Order Tracker was under load.",
+    text: "Tell me about a time you disagreed with a teammate on a technical decision. How did it end?",
     type: "behavioral",
-    related_claim: "Order Tracker used by 300 daily users.",
+    related_claim: null,
   },
   {
     id: "q6",
-    text: "Inventory Sync claims it cut mismatch tickets by 25%. How did you measure that, and what did you do when a nightly run failed?",
-    type: "resume",
-    related_claim:
-      "Cut inventory mismatch tickets by 25% after Inventory Sync went live.",
+    text: "How would you design cache invalidation for data that changes often?",
+    type: "technical",
+    related_claim: null,
   },
 ];
 
-export const mockWeakEvaluation: EvaluateResponse = {
-  technical_accuracy: {
-    score: 3,
-    reason:
-      "The answer is too vague to confirm any technical accuracy regarding the caching mechanism.",
+export const mockEvaluations: Record<"weak" | "medium" | "strong", EvaluateResponse> = {
+  weak: {
+    technical_accuracy: { score: 5, reason: "Caching is mentioned correctly but nothing explains what was cached or how." },
+    specificity: { score: 3, reason: "The answer names no tools, numbers or examples." },
+    clarity: { score: 5, reason: "Short and understandable, but too thin to follow a line of thought." },
+    resume_claim_support: { score: 3, reason: "The answer does not back up the 40 percent claim in any way." },
+    missing_points: [
+      "How latency was measured before and after",
+      "What data was cached and for how long",
+      "How stale data was handled",
+    ],
+    stronger_answer:
+      "I profiled the endpoint and found repeated Postgres queries dominating the time. I cached the read-heavy results in Redis with a 60 second TTL and invalidated keys on writes. Median latency dropped from about 800 ms to 480 ms, measured with a load test under the same traffic.",
+    needs_followup: true,
+    overall_score: 4.0,
   },
-  specificity: {
-    score: 1,
-    reason:
-      "The answer contains no concrete details, tools, numbers, or examples of the implementation.",
+  medium: {
+    technical_accuracy: { score: 7, reason: "The approach is sound, but invalidation is only touched on briefly." },
+    specificity: { score: 6, reason: "Redis and TTLs are named, but there are no measured results." },
+    clarity: { score: 7, reason: "Well ordered: problem, solution, outcome." },
+    resume_claim_support: { score: 6, reason: "Plausible support for the claim, though the numbers are missing." },
+    missing_points: ["Measured before and after latency", "Trade-off of serving slightly stale data"],
+    stronger_answer:
+      "After profiling, I cached the hottest read queries in Redis with a short TTL and invalidated on writes. I compared p50 latency before and after under the same load, which showed roughly a 40 percent drop, and I accepted up to a minute of staleness for non-critical data.",
+    needs_followup: false,
+    overall_score: 6.5,
   },
-  clarity: {
-    score: 5,
-    reason:
-      "The answer is extremely brief and lacks structure, though it is easy to understand.",
+  strong: {
+    technical_accuracy: { score: 9, reason: "Correct and complete, including invalidation and consistency trade-offs." },
+    specificity: { score: 8, reason: "Names the profiler, the TTL, and before and after numbers." },
+    clarity: { score: 9, reason: "Clear structure that is easy to follow aloud." },
+    resume_claim_support: { score: 8, reason: "The answer convincingly supports the 40 percent claim." },
+    missing_points: ["Mention of cache warm-up after a deploy"],
+    stronger_answer:
+      "Your answer is already strong. To make it excellent, also mention how you warm the cache after a deploy and how you monitor the hit rate.",
+    needs_followup: false,
+    overall_score: 8.5,
   },
-  resume_claim_support: {
-    score: 2,
-    reason:
-      "The answer fails to provide any believable detail to support the specific claim of a 40% latency reduction.",
-  },
-  missing_points: [
-    "The specific caching strategy (e.g., read-through, write-through)",
-    "The type of data cached (e.g., frequently accessed read-only data)",
-    "The mechanism for cache invalidation",
-    "The specific latency metrics before and after the change",
-  ],
-  stronger_answer:
-    "I implemented a read-through caching strategy using Redis to store frequently accessed, read-only data from PostgreSQL. This bypassed expensive database queries, and by setting a short TTL and implementing a write-through mechanism, we achieved the targeted 40% reduction in API latency.",
-  needs_followup: true,
-  overall_score: 2.8,
 };
 
-export const mockMediumEvaluation: EvaluateResponse = {
-  technical_accuracy: {
-    score: 6,
-    reason:
-      "Mentions Redis and TTL, which is plausible, but skips how writes stayed consistent with Postgres.",
-  },
-  specificity: {
-    score: 5,
-    reason:
-      "Names Redis and a cache-aside pattern, but does not include latency numbers, keys, or load-test evidence.",
-  },
-  clarity: {
-    score: 7,
-    reason:
-      "The answer is easy to follow and has a beginning and end, though it jumps past the measurement step.",
-  },
-  resume_claim_support: {
-    score: 6,
-    reason:
-      "Supports the Redis claim in outline form, but the 40% figure is asserted rather than shown.",
-  },
-  missing_points: [
-    "Baseline and post-change latency numbers",
-    "How keys were named and invalidated on writes",
-    "What was intentionally left uncached",
-  ],
-  stronger_answer:
-    "We used cache-aside in FastAPI: GET /orders/{id} checked Redis first, then Postgres. Keys used order:{id} with a 60 second TTL, and POST /orders flushed the key after commit. Locust showed p50 dropping from about 800 ms to 480 ms on the same 300-user mix, which is the 40% we reported.",
-  needs_followup: true,
-  overall_score: 6.0,
-};
+export const sampleAnswers = {
+  weak: "I used caching to make it faster and it worked well.",
+  medium:
+    "I noticed the product endpoint was slow, so I added Redis caching for the most common read queries with a short TTL. It made the API noticeably faster for users, and I cleared the cache whenever the data changed.",
+  strong:
+    "I profiled the endpoint with py-spy and found repeated Postgres queries dominated the time. I added a Redis cache with a 60 second TTL and invalidated keys on writes. Median latency dropped from about 800 ms to 480 ms, measured with Locust under identical load. The trade-off was up to a minute of stale data for non-critical fields.",
+} as const;
 
-export const mockStrongEvaluation: EvaluateResponse = {
-  technical_accuracy: {
-    score: 9,
-    reason:
-      "Describes cache-aside, TTL, write invalidation, and measurement in a way that matches FastAPI plus Redis plus Postgres.",
-  },
-  specificity: {
-    score: 9,
-    reason:
-      "Gives tools (py-spy, Locust), key pattern, TTL, and before/after latency numbers.",
-  },
-  clarity: {
-    score: 9,
-    reason:
-      "Walks through diagnosis, change, measurement, and trade-off in a clear sequence.",
-  },
-  resume_claim_support: {
-    score: 9,
-    reason:
-      "The 40% latency claim is backed by 800 ms to 480 ms under the same load.",
-  },
-  missing_points: [
-    "How stampedes were avoided if many keys expired together",
-  ],
-  stronger_answer:
-    "This is already a strong answer. One extra sentence on stampede protection (single-flight or jittered TTLs) would close the last gap.",
-  needs_followup: false,
-  overall_score: 9.0,
-};
+export function mockEvaluate(answer: string): EvaluateResponse {
+  const length = answer.trim().length;
+  if (length < 80) return mockEvaluations.weak;
+  if (length < 300) return mockEvaluations.medium;
+  return mockEvaluations.strong;
+}
 
 export const mockFollowup: FollowupResponse = {
-  followup_question:
-    "What specific data did you cache, and how did you handle cache invalidation?",
-  reason:
-    "The candidate failed to describe the scope of the caching strategy or how data freshness was maintained.",
+  followup_question: "Which tool did you use to measure latency, and what were the numbers before and after?",
+  reason: "The answer gave no concrete measurements.",
 };
 
 export const mockCompare: CompareResponse = {
-  first_scores: {
-    technical_accuracy: 2,
-    specificity: 1,
-    clarity: 3,
-    resume_claim_support: 2,
-  },
-  retry_scores: {
-    technical_accuracy: 9,
-    specificity: 9,
-    clarity: 8,
-    resume_claim_support: 9,
-  },
+  first_scores: { technical_accuracy: 5, specificity: 3, clarity: 5, resume_claim_support: 3 },
+  retry_scores: { technical_accuracy: 8, specificity: 8, clarity: 8, resume_claim_support: 7 },
+  deltas: { technical_accuracy: 3, specificity: 5, clarity: 3, resume_claim_support: 4 },
+  overall_first: 4.0,
+  overall_retry: 7.8,
+  overall_delta: 3.8,
   newly_covered_points: [
-    "Identified Postgres queries as the bottleneck using py-spy",
-    "Specified Redis TTL (60 seconds) and invalidation strategy",
-    "Provided concrete latency metrics (800ms to 480ms)",
-    "Mentioned load testing tool (Locust)",
-    "Discussed the trade-off of slightly stale data",
+    "Named the profiling tool",
+    "Gave measured before and after latency",
+    "Explained cache invalidation on writes",
   ],
-  still_missing: [""],
+  still_missing: ["Trade-offs of serving stale data", "How cache hit rate is monitored"],
   summary:
-    "The retry provided a highly detailed and technically accurate explanation, backing up the resume claim with specific tools, metrics, and trade-offs. The first answer was too vague to be useful.",
-  deltas: {
-    technical_accuracy: 7,
-    specificity: 8,
-    clarity: 5,
-    resume_claim_support: 7,
-  },
-  overall_first: 2.0,
-  overall_retry: 8.8,
-  overall_delta: 6.8,
+    "The retry added concrete tools, numbers and an invalidation strategy, which makes the 40 percent claim believable. It still does not discuss the cost of stale data or how the cache is monitored.",
 };
-
-export function mockQuestionsResponse(
-  request: QuestionsRequest,
-): { questions: Question[] } {
-  const count = Math.min(Math.max(request.count, 1), mockQuestions.length);
-  return { questions: mockQuestions.slice(0, count) };
-}
-
-export function mockEvaluationForAnswer(
-  request: EvaluateRequest,
-): EvaluateResponse {
-  const length = request.answer.trim().length;
-  if (length < 80) {
-    return mockWeakEvaluation;
-  }
-  if (length < 220) {
-    return mockMediumEvaluation;
-  }
-  return mockStrongEvaluation;
-}
